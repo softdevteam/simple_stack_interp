@@ -1,5 +1,35 @@
 import sys
 
+def main(args):
+
+    prog = [
+        Op("PUSH", ["-1000000"]),
+        Op("STORE", ["i"]),
+        Op("LOAD", ["i"]),
+        Op("PUSH", ["0"]),
+        Op("CMP"),
+        Op("CJMP", ["999"]),
+        Op("LOAD", ["i"]),
+        #Op("PRINT"),
+
+        Op("PUSH", ["1"]),
+        Op("ADD"),
+        Op("STORE", ["i"]),
+        Op("JMP", ["2"])
+    ]
+    interp = Interpreter(prog)
+    interp.run()
+
+    return 0
+
+def target(*args):
+    return main, None
+
+def jitpolicy(driver):
+    from rpython.jit.codewriter.policy import JitPolicy
+    return JITPolicy()
+
+
 class Op(object):
     def __init__(self, name, args = None):
         self.name = name
@@ -19,7 +49,8 @@ class Interpreter(object):
         self.vars = {}  # name -> val
 
     def dump_stack(self):
-        print("debug (pc=%s): %s" % (self.pc, self.stack))
+        #print("debug (pc=%s): %s" % (self.pc, self.stack))
+        pass
 
     def run(self):
 
@@ -31,10 +62,10 @@ class Interpreter(object):
             self.dump_stack()
             command = self.prog[self.pc]
 
-            print command
+            #print command
 
             if command.name == "PUSH":
-                self.stack.append(command.args[0])
+                self.stack.append(int(command.args[0]))
             elif command.name == "MUL":
                 x = self.stack.pop()
                 y = self.stack.pop()
@@ -54,46 +85,30 @@ class Interpreter(object):
                 else:
                     self.stack.append(0)
             elif command.name == "CJMP":
-                
+
                 x = self.stack.pop()
-                
+
                 if x == 1:
-                    self.pc = command.args[0]
+                    self.pc = int(command.args[0])
                     continue
             elif command.name == "STORE":
                 self.vars[command.args[0]] = self.stack.pop()
             elif command.name == "LOAD":
-                self.stack.append(self.vars[command.args[0]])                                                
+                self.stack.append(self.vars[command.args[0]])
             elif command.name == "JMP":
-                self.pc = command.args[0]
-                continue           
+                self.pc = int(command.args[0])
+                continue
 
             else:
                 print("Unhandled bytecode: %s" % command)
-                sys.exit(1)
+                return 0
 
             self.pc += 1
 
 
-
+        return 0
 
 if __name__ == "__main__":
     # make a program in-memory
 
-    prog = [
-        Op("PUSH", [-100]),
-        Op("STORE", ["i"]),
-        Op("LOAD", ["i"]),
-        Op("PUSH", [0]),
-        Op("CMP"),
-        Op("CJMP", [999]),
-        Op("LOAD", ["i"]),        
-        Op("PRINT"),
-        
-        Op("PUSH", [1]),        
-        Op("ADD"),
-        Op("STORE", ["i"]),
-        Op("JMP", [2])
-    ]
-    interp = Interpreter(prog)
-    interp.run()
+    main(None)
