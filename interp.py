@@ -1,5 +1,7 @@
 import sys
+import calculator
 from rpython.rlib import jit
+from rpython.rlib.streamio import open_file_as_stream
 
 def target(*args):
     return main, None
@@ -51,11 +53,13 @@ class Interpreter(object):
 
             #self.dump_stack()
             command = self.prog[self.pc]
-
             #print command
 
             if command.name == "PUSH":
                 self.stack.append(int(command.args[0]))
+
+            elif command.name == "PRINT":
+                print self.stack[-1]
 
             elif command.name == "MUL":
                 x = self.stack.pop()
@@ -66,9 +70,6 @@ class Interpreter(object):
                 x = self.stack.pop()
                 y = self.stack.pop()
                 self.stack.append(x + y)
-
-            elif command.name == "PRINT":
-                print self.stack[-1]
 
             elif command.name == "CMP":
                 x = self.stack.pop()
@@ -96,6 +97,10 @@ class Interpreter(object):
                 self.pc = int(command.args[0])
                 continue
 
+            elif command.name == "CHALT":
+                if self.stack[-1] == 1:
+                    break
+
             else:
                 print("Unhandled bytecode: %s" % command)
                 return 0
@@ -110,15 +115,18 @@ if __name__ == "__main__":
 def main(args):
     prog = []
     try:
-        with open(args[1], "r") as program_file:
-            while True:
-                line = program_file.readline().strip()
-                if not line:
-                    break
-                # some lines are 'commented' with '#'
-                if not line.startswith("#"):
-                    command = line.split(" ")
-                    prog.append(Op(command[0], len(command) > 1 and [command[1]] or None))
+        program_file = open_file_as_stream(args[1])
+        lines = program_file.readall().split("\n")
+        program_file.close()
+
+        for line in lines:
+            line = line.strip()
+
+            # some lines are 'commented' with '#'
+            if not line.startswith("#"):
+                command = line.split(" ")
+                prog.append(Op(command[0], len(command) > 1 and [command[1]] or None))
+
     except IndexError as e:
         print "[ERROR] Need an argument"
     except IOError as e:
