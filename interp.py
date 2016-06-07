@@ -33,6 +33,8 @@ class Op(object):
 
 class Interpreter(object):
 
+    operations = ["ADD", "SUB", "MUL", "DIV", "MOD"]
+
     def __init__(self, prog):
         self.prog = prog
         self.pc = 0
@@ -42,14 +44,15 @@ class Interpreter(object):
     def dump_stack(self):
         print("debug (pc=%s): %s" % (self.pc, self.stack))
 
+    @jit.elidable
+    def get_variable(self, name):
+        return self.vars.get(name, 0)
+
     def run(self):
 
-        while True:
+        while self.pc < len(self.prog):
 
             jit_driver.jit_merge_point(pc = self.pc, self = self)
-
-            if self.pc >= len(self.prog):
-                break
 
             #self.dump_stack()
             command = self.prog[self.pc]
@@ -58,52 +61,69 @@ class Interpreter(object):
             if command.name == "PUSH":
                 self.stack.append(int(command.args[0]))
 
+            elif command.name == "POP":
+                self.stack.pop()
+
             elif command.name == "PRINT":
                 print self.stack[-1]
 
-            elif command.name == "MUL":
-                x = self.stack.pop()
-                y = self.stack.pop()
-                self.stack.append(x * y)
+            elif command.name == "STORE":
+                self.vars[command.args[0]] = self.stack.pop()
 
-            elif command.name == "ADD":
+            elif command.name == "LOAD":
+                self.stack.append(self.get_variable(command.args[0]))
+
+            elif command.name == "JMP":
+                self.pc = int(command.args[0])
+                continue
+
+            elif command.name == "CJMP":
                 x = self.stack.pop()
-                y = self.stack.pop()
-                self.stack.append(x + y)
+                if x == 1:
+                    self.pc = int(command.args[0])
+                    continue
+
+            elif command.name == "HALT":
+                break
+
+            # conditional halt
+            elif command.name == "CHALT":
+                if self.stack[-1] == 1:
+                    break
 
             elif command.name == "CMP":
-                x = self.stack.pop()
-                y = self.stack.pop()
+                x, y = self.stack.pop(), self.stack.pop()
 
                 if x == y:
                     self.stack.append(1)
                 else:
                     self.stack.append(0)
 
-            elif command.name == "CJMP":
+            elif command.name in Interpreter.operations:
                 x = self.stack.pop()
+                y = self.stack.pop()
 
-                if x == 1:
-                    self.pc = int(command.args[0])
-                    continue
-
-            elif command.name == "STORE":
-                self.vars[command.args[0]] = self.stack.pop()
-
-            elif command.name == "LOAD":
-                self.stack.append(self.vars[command.args[0]])
-
-            elif command.name == "JMP":
-                self.pc = int(command.args[0])
-                continue
-
-            elif command.name == "CHALT":
-                if self.stack[-1] == 1:
-                    break
-
+                if command.name == "ADD":
+                    self.stack.append(x + y)
+                elif command.name == "SUB":
+                    self.stack.append(x - y)
+                elif command.name == "MUL":
+                    self.stack.append(x * y)
+                elif command.name == "DIV":
+                    #error
+                    if y == 0:
+                        pass
+                    else :
+                        self.stack.append(int(x // y))
+                elif command.name == "MOD":
+                    #error
+                    if y == 0:
+                        pass
+                    else :
+                        self.stack.append(x % y)
             else:
                 print("Unhandled bytecode: %s" % command)
-                return 0
+                return 1
 
             self.pc += 1
 
