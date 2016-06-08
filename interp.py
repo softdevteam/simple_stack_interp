@@ -1,5 +1,5 @@
 import sys
-import calculator
+
 from rpython.rlib import jit
 from rpython.rlib.streamio import open_file_as_stream
 
@@ -44,7 +44,6 @@ class Interpreter(object):
     def dump_stack(self):
         print("debug (pc=%s): %s" % (self.pc, self.stack))
 
-    @jit.elidable
     def get_variable(self, name):
         return self.vars.get(name, 0)
 
