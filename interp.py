@@ -61,20 +61,27 @@ class Interpreter(object):
 
     @jit.elidable_promote()
     def get_variable_off(self, name):
-        return self.var_offsets[name]
-
-    def set_variable(self, name, val):
         off = self.var_offsets.get(name, -1)
         if off == -1:
-            self.var_offsets[name] = len(self.vars)
-            self.vars.append(val)
-            return
+            off = len(self.vars)
+            self.var_offsets[name] = off
+            self.vars.append(-1)
+        return off
+
+    def set_variable(self, name, val):
+        off = self.get_variable_off(name)
         self.vars[off] = val
 
     def run(self):
         while self.pc < len(self.prog):
             jit_driver.jit_merge_point(pc = self.pc, self = self)
             command = self.prog[self.pc]
+
+            #print opcodes[opcodes.values().index(command.name)], type(command.name), type(command.args)
+            #print type(command.name)
+            #if command.__class__ is not Op:
+            #    print filter(lambda x: x[1] == command.name, opcodes.items())[0][0], type(command.name)
+
             if command.name == PUSH:
                 assert isinstance(command, IntOp)
                 self.stack.append(command.args)
