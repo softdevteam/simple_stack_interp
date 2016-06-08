@@ -151,8 +151,8 @@ def main(args):
                 command = line.split(" ")
                 if command[0] == "LOAD" or command[0] == "STORE":
                     prog.append(StringOp(opcodes[command[0]], command[1]))
-                elif command[0] == "PUSH" or command[0] == "POP" or \
-                    command[0] == "JMP" or command[0] == "CJMP":
+                elif command[0] == "PUSH" or command[0] == "JMP" or \
+                    command[0] == "CJMP":
                     prog.append(IntOp(opcodes[command[0]], command[1]))
                 else:
                     prog.append(Op(opcodes[command[0]]))
